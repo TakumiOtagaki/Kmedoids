@@ -52,3 +52,13 @@ python Kmedoids.py --num_core 4 --input_distmat dist.csv --dist_type (triu|tril|
 
 python ../../kmedoids-parallel/kmedoids-parallel.py --num_thread 30 --input_distmat edit_dist_zerofilled.csv --dist_type triu --output_medoids kmedoids_result/medois.csv --output_label kmedoids_result/labels.csv --num_clusters 30 --max_iter 1000 --verbose
 ```
+
+
+# Installation
+Easy.
+Python3 will work.
+
+```installation.sh
+$ git clone https://github.com/TakumiOtagaki/Kmedoids-parallel.git
+$ cd Kmedoids-parallel
+$ pip install -r requirements.txt
