@@ -2,6 +2,7 @@
 # 2023/12/08
 
 # python Kmedoids.py --num_core 4 --input_distmat dist.csv --dist_type (triu|tril|sym) \
+#                    --input_sep "," \
 #                    --output_medoids medoids.csv --output_label labels.csv --num_clusters 2 --max_iter 1000 \
 #                    --verbose --random_seed 0
 
@@ -19,6 +20,8 @@ def parse_args():
     # help
     parser.add_argument('--num_thread', type=int, default=1,
                         help='Number of threads. if num_thread > num_points, set num_thread = num_points for avoiding useless cpu usage')
+    parser.add_argument('--input_sep', type=str, default=',',
+                        help='Input distance matrix separator')
     parser.add_argument('--input_distmat', type=str, default='test.triu.distmat.csv',
                         help='Input distance matrix')
     parser.add_argument('--dist_type', type=str, default='triu',
@@ -39,7 +42,7 @@ def parse_args():
                         help='Random seed.')
     return parser.parse_args()
 
-def read_distmat(distmat_file, dist_type):
+def read_distmat(distmat_file, dist_type, sep):
     # read distance matrix from distance_matrix.csv
         # dist_type: triu (upper triangle), tril (lower triangle), sym (symmetry)
     # return: distance matrix
@@ -51,7 +54,7 @@ def read_distmat(distmat_file, dist_type):
 
     # avoid using pandas.read_csv to save memory, use 
     # np.loadtxt instead
-    distmat = np.loadtxt(distmat_file, delimiter=',')
+    distmat = np.loadtxt(distmat_file, delimiter=sep)
 
     # convert to symmetry distance matrix
     if dist_type == 'triu':
@@ -153,7 +156,7 @@ def main():
     
     # read distance matrix
     if args.verbose: print('Reading distance matrix...'); start = time.time()
-    distmat = read_distmat(args.input_distmat, args.dist_type)
+    distmat = read_distmat(args.input_distmat, args.dist_type, args.input_sep)
     if args.verbose: print('Done'); print(f"Distance matrix shape: {distmat.shape}"); print(f"Time elapsed: {time.time() - start} s")
 
     # if args.num_points > args.num_thread: args.num_thread = args.num_points
