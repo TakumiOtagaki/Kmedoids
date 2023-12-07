@@ -46,7 +46,7 @@ options:
 
 For example, 
 ```for_example.sh
-python Kmedoids.py --num_core 4 --input_distmat dist.csv --dist_type (triu|tril|sym) \
+python kmedoids.py --num_core 4 --input_distmat dist.csv --dist_type (triu|tril|sym) \
                     --output_medoids medoids.csv --output_label labels.csv --num_clusters 2 --max_iter 1000 \
                     --verbose --random_seed 0
 
@@ -62,3 +62,6 @@ Python3 will work.
 $ git clone https://github.com/TakumiOtagaki/Kmedoids-parallel.git
 $ cd Kmedoids-parallel
 $ pip install -r requirements.txt
+```
+
+If you want, you can prepend `kmedoids.py` to $PATH.
