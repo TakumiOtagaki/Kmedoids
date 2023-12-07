@@ -1,15 +1,11 @@
 # K-medoids
 
-Binary software for K-medoids.
+A Python script for K-medoids clustering with multi-process.
 
 # Introduction
-There is no useful binary-implementation of K-medoids.
-After installation, you can do clustering in your command line.
+There is no useful multiprocessing implementation of K-medoids.
+
+```.sh
+python Kmedoids.py --num_thread 64 --input_distmat dist.csv --dist_type (triu|tril|sym) \
 
 ```
-module load K-medoids
-K-medoids --input input_file \
- --output_centroid output_centroid\
- --output_label output_label
-```
-
