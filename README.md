@@ -8,6 +8,7 @@ There is no useful multiprocessing implementation of K-medoids.
 
 # usage
 ```
+python kmedoids-parallel.py --help
 usage: python kmedoids-parallel.py [-h] [--num_thread NUM_THREAD]
                                    [--input_distmat INPUT_DISTMAT]
                                    [--dist_type DIST_TYPE]
@@ -21,22 +22,25 @@ Kmedoids clustering
 
 options:
   -h, --help            show this help message and exit
-  --num_thread NUM_THREAD
+  -c, --av_cpu          Check available CPU. If True, the program will exit after checking available CPU
+  -p NUM_THREAD, --num_thread NUM_THREAD
                         Number of threads. if num_thread > num_points, set num_thread = num_points for avoiding useless cpu usage
-  --input_distmat INPUT_DISTMAT
+  -s INPUT_SEP, --input_sep INPUT_SEP
+                        Input distance matrix separator
+  -I INPUT_DISTMAT, --input_distmat INPUT_DISTMAT
                         Input distance matrix
-  --dist_type DIST_TYPE
+  -T DIST_TYPE, --dist_type DIST_TYPE
                         Input distance matrix type (triu|tril|sym)
-  --output_medoids OUTPUT_MEDOIDS
+  -M OUTPUT_MEDOIDS, --output_medoids OUTPUT_MEDOIDS
                         Output medoids
-  --output_label OUTPUT_LABEL
+  -L OUTPUT_LABEL, --output_label OUTPUT_LABEL
                         Output labels
-  --num_clusters NUM_CLUSTERS
+  -k NUM_CLUSTERS, --num_clusters NUM_CLUSTERS
                         Number of clusters
-  --verbose             Verbose mode
-  --max_iter MAX_ITER   Maximum number of iterations
-  --av_cpu              Check available CPU. If True, the program will exit after checking available CPU
-  --random_seed RANDOM_SEED
+  -v, --verbose         Verbose mode
+  -N MAX_ITER, --max_iter MAX_ITER
+                        Maximum number of iterations
+  -r RANDOM_SEED, --random_seed RANDOM_SEED
                         Random seed.
 ```
 
@@ -45,4 +49,6 @@ For example,
 python Kmedoids.py --num_core 4 --input_distmat dist.csv --dist_type (triu|tril|sym) \
                     --output_medoids medoids.csv --output_label labels.csv --num_clusters 2 --max_iter 1000 \
                     --verbose --random_seed 0
+
+python ../../kmedoids-parallel/kmedoids-parallel.py --num_thread 30 --input_distmat edit_dist_zerofilled.csv --dist_type triu --output_medoids kmedoids_result/medois.csv --output_label kmedoids_result/labels.csv --num_clusters 30 --max_iter 1000 --verbose
 ```
