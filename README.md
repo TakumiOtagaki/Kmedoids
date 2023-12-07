@@ -12,14 +12,14 @@ python Kmedoids.py --num_thread 64 --input_distmat dist.csv --dist_type (triu|tr
 
 # usage
 ```
-usage: kmedoids-parallel.py [-h] [--num_thread NUM_THREAD]
-                            [--input_distmat INPUT_DISTMAT]
-                            [--dist_type DIST_TYPE]
-                            [--output_medoids OUTPUT_MEDOIDS]
-                            [--output_label OUTPUT_LABEL]
-                            [--num_clusters NUM_CLUSTERS] [--verbose]
-                            [--max_iter MAX_ITER] [--av_cpu]
-                            [--random_seed RANDOM_SEED]
+usage: python kmedoids-parallel.py [-h] [--num_thread NUM_THREAD]
+                                   [--input_distmat INPUT_DISTMAT]
+                                   [--dist_type DIST_TYPE]
+                                   [--output_medoids OUTPUT_MEDOIDS]
+                                   [--output_label OUTPUT_LABEL]
+                                   [--num_clusters NUM_CLUSTERS] [--verbose]
+                                   [--max_iter MAX_ITER] [--av_cpu]
+                                   [--random_seed RANDOM_SEED]
 
 Kmedoids clustering
 

@@ -15,7 +15,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Kmedoids clustering')
     # help
     parser.add_argument('--num_thread', type=int, default=1,
-                        help='Number of threads')
+                        help='Number of threads. if num_thread > num_points, set num_thread = num_points for avoiding useless cpu usage')
     parser.add_argument('--input_distmat', type=str, default='test.triu.distmat.csv',
                         help='Input distance matrix')
     parser.add_argument('--dist_type', type=str, default='triu',
@@ -74,7 +74,6 @@ def update_medoids(distmat, labels, medoids, i):
     # return medoids[i]
     return cluster[np.argmin(np.sum(distmat_sub, axis=1))]
 
-
 def kmedoids(distmat, num_clusters, num_thread, verbose, max_iter, random_seed):
     # kmedoids clustering
         # distmat: distance matrix (symmetry), ndarray
@@ -100,10 +99,6 @@ def kmedoids(distmat, num_clusters, num_thread, verbose, max_iter, random_seed):
         results = [pool.apply_async(update_medoids, args=(distmat, labels, medoids, i)) for i in range(num_clusters)]
         medoids_new = np.array([p.get() for p in results])
         pool.close()
-        # for i in range(num_clusters):
-        #     cluster = np.where(labels == i)[0]
-        #     distmat_sub = distmat[cluster][:, cluster]
-        #     medoids[i] = cluster[np.argmin(np.sum(distmat_sub, axis=1))]
 
         labels_old = labels.copy()
 
