@@ -26,7 +26,7 @@ Kmedoids clustering
 options:
   -h, --help            show this help message and exit
   --num_thread NUM_THREAD
-                        Number of threads
+                        Number of threads. if num_thread > num_points, set num_thread = num_points for avoiding useless cpu usage
   --input_distmat INPUT_DISTMAT
                         Input distance matrix
   --dist_type DIST_TYPE
@@ -39,8 +39,7 @@ options:
                         Number of clusters
   --verbose             Verbose mode
   --max_iter MAX_ITER   Maximum number of iterations
-  --av_cpu              Check available CPU. If True, the program will exit
-                        after checking available CPU
+  --av_cpu              Check available CPU. If True, the program will exit after checking available CPU
   --random_seed RANDOM_SEED
                         Random seed.
 ```
