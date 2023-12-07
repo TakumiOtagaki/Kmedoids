@@ -4,7 +4,7 @@ A Python script for K-medoids clustering with multi-process.
 
 # Introduction
 There is no useful multiprocessing implementation of K-medoids.
-
+This program can be used when you have distance_matrix (triangle is OK).
 
 # usage
 ```
