@@ -1,3 +1,6 @@
+# Takumi Otagaki
+# 2023/12/08
+
 # python Kmedoids.py --num_core 4 --input_distmat dist.csv --dist_type (triu|tril|sym) \
 #                    --output_medoids medoids.csv --output_label labels.csv --num_clusters 2 --max_iter 1000 \
 #                    --verbose --random_seed 0
