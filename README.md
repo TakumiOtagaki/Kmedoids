@@ -68,3 +68,9 @@ $ pip install -r requirements.txt
 ```
 
 If you want, you can prepend `kmedoids.py` to $PATH.
+
+
+```
+python /nfs/data05/otgk/kmedoids-parallel/kmedoids-parallel.py -p 30 -I /nfs/data05/otgk/rDNA/haplotyping/edit_dist_zerofilled.csv \
+ -T triu -M /nfs/data05/otgk/rDNA/haplotyping/kmedoids_result/kmedoids.m.csv -L /nfs/data05/otgk/rDNA/haplotyping/kmedoids_result/kmedoids.l.csv -k 30 -N 10 -v
+```
