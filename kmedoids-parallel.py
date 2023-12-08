@@ -39,7 +39,7 @@ def parse_args():
     parser.add_argument('-N','--max_iter',  type=int, default=300,
                         help='Maximum number of iterations')
     parser.add_argument('-r','--random_seed', type=int, default=0,
-                        help='Random seed.')
+                        help='Random seed: Should be integer')
     return parser.parse_args()
 
 def read_distmat(distmat_file, dist_type, sep):
