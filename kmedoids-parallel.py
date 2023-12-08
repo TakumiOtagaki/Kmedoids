@@ -66,7 +66,7 @@ def read_distmat(distmat_file, dist_type, sep):
     
     return distmat
 
-def update_medoids(distmat, labels, medoids, i):
+def update_medoids(distmat, labels,  i):
     # update medoids
         # distmat: distance matrix (symmetry), ndarray
         # labels: labels of each data point, ndarray
@@ -79,6 +79,7 @@ def update_medoids(distmat, labels, medoids, i):
     # medoids[i] = cluster[np.argmin(np.sum(distmat_sub, axis=1))]
     # return medoids[i]
     return cluster[np.argmin(np.sum(distmat_sub, axis=1))]
+
 
 def kmedoids(distmat, num_clusters, num_thread, verbose, max_iter, random_seed):
     # kmedoids clustering
@@ -96,30 +97,34 @@ def kmedoids(distmat, num_clusters, num_thread, verbose, max_iter, random_seed):
     if verbose: print('Initialization done'); iter_span = (max_iter // 5) if max_iter > 5 else 1
 
     # start kmedoids
+    
     for iter in range(max_iter):
-        if verbose and (iter % iter_span == 0 or iter == max_iter - 1):
-            print(f"Iteration {iter}: {iter * 1.0 / max_iter * 100} % ")
+        if verbose:
+            start = time.time()
+            print(f"Iteration {iter}: {iter * 1.0 / max_iter * 100} %")
         # update medoids
         # use multiprocessing to speed up
         pool = mp.Pool(processes=num_thread)
-        results = [pool.apply_async(update_medoids, args=(distmat, labels, medoids, i)) for i in range(num_clusters)]
-        medoids_new = np.array([p.get() for p in results])
+        results = [pool.apply_async(update_medoids, args=(distmat, labels,  i)) for i in range(num_clusters)]
+        medoids = np.array([p.get() for p in results])
         pool.close()
+        print("\tmedoids_new calculated")
 
         labels_old = labels.copy()
 
         # update labels
         # use multiprocessing to speed up
         pool = mp.Pool(processes=num_thread)
-        results = [pool.apply_async(np.argmin, args=(distmat[i, medoids_new],)) for i in range(distmat.shape[0])]
+        results = [pool.apply_async(np.argmin, args=(distmat[i, medoids],)) for i in range(distmat.shape[0])]
         labels = np.array([p.get() for p in results])
         pool.close()
+        print("\tlabel_new calculated")
 
-        medoids = medoids_new.copy()
         # check convergence
         if np.array_equal(labels, labels_old):
             if verbose: print('Converged')
             break
+        if verbose: print(f"Time elapsed: {time.time() - start} s for {iter}th iteration")
     if verbose: print('Not converged')
     return medoids, labels
 
