@@ -58,6 +58,9 @@ python ../../kmedoids-parallel/kmedoids-parallel.py --num_thread 30 --input_dist
 Easy.
 Python3 will work.
 
+- Python 3.11.6
+
+
 ```installation.sh
 $ git clone https://github.com/TakumiOtagaki/Kmedoids-parallel.git
 $ cd Kmedoids-parallel
