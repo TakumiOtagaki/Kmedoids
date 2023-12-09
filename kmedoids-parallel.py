@@ -12,59 +12,10 @@ import random
 import time
 import sys
 import os
+from math import ceil
 import multiprocessing as mp
+from modules.util import parse_args, read_distmat, input_validation
 
-
-def parse_args():
-    parser = argparse.ArgumentParser(description='Kmedoids clustering')
-    # help
-    parser.add_argument('-c', '--av_cpu', default=False, action='store_true',
-                        help='Check available CPU. If True, the program will exit after checking available CPU')
-    parser.add_argument('-p','--num_thread', type=int, default=1,
-                        help='Number of threads. if num_thread > num_points, set num_thread = num_points for avoiding useless cpu usage')
-    parser.add_argument('-s','--input_sep', type=str, default=',',
-                        help='Input distance matrix separator')
-    parser.add_argument( '-I','--input_distmat', type=str, default='test.triu.distmat.csv',
-                        help='Input distance matrix')
-    parser.add_argument('-T', '--dist_type',  type=str, default='triu',
-                        help='Input distance matrix type (triu|tril|sym)')
-    parser.add_argument('-M','--output_medoids',  type=str, default='out_medoids.csv',
-                        help='Output medoids')
-    parser.add_argument('-L', '--output_label',  type=str, default='out_labels.csv',
-                        help='Output labels')
-    parser.add_argument( '-k','--num_clusters', type=int, default=2,
-                        help='Number of clusters')
-    parser.add_argument('-v', '--verbose',  action='store_true',
-                        help='Verbose mode', default=False)
-    parser.add_argument('-N','--max_iter',  type=int, default=300,
-                        help='Maximum number of iterations')
-    parser.add_argument('-r','--random_seed', type=int, default=0,
-                        help='Random seed: Should be integer')
-    return parser.parse_args()
-
-def read_distmat(distmat_file, dist_type, sep):
-    # read distance matrix from distance_matrix.csv
-        # dist_type: triu (upper triangle), tril (lower triangle), sym (symmetry)
-    # return: distance matrix
-
-    if dist_type not in ['triu', 'tril', 'sym']:
-        raise ValueError('dist_type must be triu, tril, or sym')
-    if not os.path.exists(distmat_file):
-        raise ValueError('distance matrix file not found')
-
-    # avoid using pandas.read_csv to save memory, use 
-    # np.loadtxt instead
-    distmat = np.loadtxt(distmat_file, delimiter=sep)
-
-    # convert to symmetry distance matrix
-    if dist_type == 'triu':
-        distmat = np.triu(distmat) + np.triu(distmat).T
-    elif dist_type == 'tril':
-        distmat = np.tril(distmat) + np.tril(distmat).T
-    elif dist_type == 'sym':
-        pass
-    
-    return distmat
 
 def update_medoids(distmat, labels,  i):
     # update medoids
@@ -78,7 +29,143 @@ def update_medoids(distmat, labels,  i):
     distmat_sub = distmat[cluster][:, cluster]
     # medoids[i] = cluster[np.argmin(np.sum(distmat_sub, axis=1))]
     # return medoids[i]
+
     return cluster[np.argmin(np.sum(distmat_sub, axis=1))]
+
+def candidate_medoids_parallel(distmat_sub_split, j):
+    # 1 <= thread_id <= num_thread
+
+    # return the index of the data point which has the minimum sum of distance to other data points in the cluster in each thread
+    # return integer
+
+    # return cluster[np.argmin(distmat_sub_sum)]
+
+    return np.argmin(np.sum(distmat_sub_split[j], axis=1))
+
+
+def better_medoids_initialization(distmat, num_clusters, verbose, random_seed):
+    # initialize medoids randomly, but better than random
+        # distmat: distance matrix (symmetry), ndarray
+        # num_clusters: number of clusters
+    # return: medoids
+    # key: choose the first medoid randomly, then choose the rest medoids based on the distance to the medoid before it
+
+    # initialize medoids randomly
+    medoids = np.random.randint(distmat.shape[0], size=1)
+    for i in range(num_clusters - 1):
+        distmat_sub = distmat[:, medoids]
+        distmat_sub = np.min(distmat_sub, axis=1)
+        medoids.append(np.argmax(distmat_sub))
+    return medoids
+
+def medoids_initialization(distmat, num_clusters, verbose, random_seed):
+    # initialize medoids randomly
+        # distmat: distance matrix (symmetry), ndarray
+        # num_clusters: number of clusters
+    # return: medoids
+
+    # initialize medoids randomly
+    medoids = random.sample(range(distmat.shape[0]), num_clusters)
+    return medoids
+
+def kmedoids_iter(distmat, num_clusters, num_thread, verbose, medoids, labels):
+    # 3 cases:
+        # num_thread = num_clusters
+        # num_thread < num_clusters
+        # num_thread > num_clusters
+    # return: medoids, labels
+
+    labels_old = labels.copy()
+
+    # ------------------------------------ update medoids ------------------------------------
+    if num_thread == num_clusters:
+        # update medoids
+        # use multiprocessing to speed up
+        pool = mp.Pool(processes=num_thread)
+        results = [pool.apply_async(update_medoids, args=(distmat, labels,  i)) for i in range(num_clusters)]
+        medoids = np.array([p.get() for p in results])
+        pool.close()
+        # print("\tmedoids_new calculated")
+    
+    elif num_thread < num_clusters:
+        # for each cluster i, sort the cluster by np.where(labels == i)[0].shape[0],
+        # then update medoids and labels in order and use multiprocessing to speed up
+        # rest of the clusters are updated by the last threads (num_thread - num_clusters)
+
+        # update medoids
+        # sort the cluster index by np.where(labels == i)[0].shape[0]: large -> small
+        cluster_ind_sorted = np.argsort([np.where(labels == i)[0].shape[0] for i in range(num_clusters)])[::-1]
+
+        # use multiprocessing to speed up
+        pool = mp.Pool(processes=num_thread)
+        results_head = [pool.apply_async(update_medoids, args=(distmat, labels,  cluster_ind_sorted[i])) for i in range(num_thread)]
+        results_tail = [pool.apply_async(update_medoids, args=(distmat, labels,  cluster_ind_sorted[i])) for i in range(num_thread, num_clusters)]
+        medoids_head = np.array([p.get() for p in results_head])
+        medoids_tail = np.array([p.get() for p in results_tail])
+        pool.close()
+        medoids = np.concatenate((medoids_head, medoids_tail))
+
+    elif num_thread > num_clusters:
+        # for each cluster i, sort the cluster by np.where(labels == i)[0].shape[0],
+        # then, distribute the threads (num_thread) to the clusters in nice way.
+            # e.g. num_thread = 8, num_clusters = 5, then 3 threads are distributed to the clusters with large size.
+                # cluster 0: 3 threads
+                # cluster 1: 2 threads
+                # cluster 2: 1 thread
+                # cluster 3: 1 thread
+                # cluster 4: 1 thread
+        # in this block, we need to update medoids with multi core.
+
+        # update medoids
+        # sort the cluster index by np.where(labels == i)[0].shape[0]: large -> small
+        cluster_ind_sorted = np.argsort([np.where(labels == i)[0].shape[0] for i in range(num_clusters)])[::-1]
+
+        # use multiprocessing to speed up
+        
+        # thread distribution: 
+            # is proportion to np.where(labels == i)[0].shape[0] (cluster size)
+        thread_distribution = np.array([np.where(labels == i)[0].shape[0] for i in range(num_clusters)])
+        thread_distribution = thread_distribution / np.sum(thread_distribution) * num_thread
+        thread_distribution = np.round(thread_distribution).astype(np.int32)
+        thread_distribution[-1] = num_thread - np.sum(thread_distribution[:-1])
+        # print(thread_distribution)
+        pool = mp.Pool(processes=num_thread)
+        for k in range(num_clusters):
+            # get the argmin candidate.
+            # use multiprocessing to speed up
+            cluster = np.where(labels == k)[0]
+            distmat_sub = distmat[cluster][:, cluster]
+            distmat_sub_split = np.array_split(distmat_sub, thread_distribution[k])
+            results_k = [pool.apply_async(candidate_medoids_parallel, args=(distmat_sub_split, j)) for j in range(thread_distribution[k])]
+            medoids[k] = cluster[np.array([p.get() for p in results_k]).argmin()]
+        pool.close()
+        if verbose: print("\tmedoids_new calculated")
+
+        # update labels
+
+
+    # ------------------------------------ update labels ------------------------------------
+    # use multiprocessing to speed up
+    pool = mp.Pool(processes=num_thread)
+    # distribute the threads to distmat.shape[0].
+    # distmat.shape[0] is larger than num_thread, so we need to split distmat.shape[0] into num_thread.
+    # calc np.argmin, args=(distmat[i, medoids] for i in range(distmat.shape[0])).
+    # for i in range(distmat.shape[0]), we need to calc np.argmin, args=(distmat[i, medoids]). split this into num_thread.
+
+
+    for i in range(ceil(distmat.shape[0] / num_thread)):
+        results = [pool.apply_async(np.argmin, args=(distmat[i * num_thread + j, medoids],)) for j in range(num_thread)]
+        labels[i * num_thread : (i + 1) * num_thread] = np.array([p.get() for p in results])
+    results = [pool.apply_async(np.argmin, args=(distmat[i, medoids],)) for i in range(distmat.shape[0] % num_thread)]
+
+
+    
+
+    labels = np.array([p.get() for p in results])
+    pool.close()
+    if verbose: print("\tlabel_new calculated")
+    return medoids, labels
+
 
 
 def kmedoids(distmat, num_clusters, num_thread, verbose, max_iter, random_seed):
@@ -104,21 +191,26 @@ def kmedoids(distmat, num_clusters, num_thread, verbose, max_iter, random_seed):
             print(f"Iteration {iter}: {iter * 1.0 / max_iter * 100} %")
         # update medoids
         # use multiprocessing to speed up
-        pool = mp.Pool(processes=num_thread)
-        results = [pool.apply_async(update_medoids, args=(distmat, labels,  i)) for i in range(num_clusters)]
-        medoids = np.array([p.get() for p in results])
-        pool.close()
-        print("\tmedoids_new calculated")
+        # pool = mp.Pool(processes=num_thread)
+        # results = [pool.apply_async(update_medoids, args=(distmat, labels,  i)) for i in range(num_clusters)]
+        # medoids = np.array([p.get() for p in results])
+        # pool.close()
+        # print("\tmedoids_new calculated")
 
-        labels_old = labels.copy()
+        # labels_old = labels.copy()
 
-        # update labels
-        # use multiprocessing to speed up
-        pool = mp.Pool(processes=num_thread)
-        results = [pool.apply_async(np.argmin, args=(distmat[i, medoids],)) for i in range(distmat.shape[0])]
-        labels = np.array([p.get() for p in results])
-        pool.close()
-        print("\tlabel_new calculated")
+        # # update labels
+        # # use multiprocessing to speed up
+        # pool = mp.Pool(processes=num_thread)
+        # results = [pool.apply_async(np.argmin, args=(distmat[i, medoids],)) for i in range(distmat.shape[0])]
+        # labels = np.array([p.get() for p in results])
+        # pool.close()
+        # print("\tlabel_new calculated")
+
+        kmedoids_iter(distmat, num_clusters, num_thread, verbose, medoids, labels)
+
+
+
 
         # check convergence
         if np.array_equal(labels, labels_old):
@@ -128,30 +220,6 @@ def kmedoids(distmat, num_clusters, num_thread, verbose, max_iter, random_seed):
     if verbose: print('Not converged')
     return medoids, labels
 
-def input_validation(args):
-    # input validation
-    if args.num_thread <= 0:
-        raise ValueError('num_thread must be greater than 0')
-    if args.dist_type not in ['triu', 'tril', 'sym']:
-        raise ValueError('dist_type must be triu, tril, or sym')
-    if not os.path.exists(args.input_distmat):
-        raise ValueError('distance matrix file not found')
-    if args.num_clusters <= 0:
-        raise ValueError('num_clusters must be greater than 0')
-    if args.max_iter <= 0:
-        raise ValueError('max_iter must be greater than 0')
-    if args.num_points <= 0:
-        raise ValueError('num_points must be greater than 0')
-    if args.num_points > args.num_thread:
-        raise ValueError('num_points must be less than or equal to num_thread')
-    if type(args.random_seed) != int:
-        raise ValueError('random_seed must be integer')
-    return True
-
-def available_cpu():
-    # check available cpu
-    # return: number of available cpu
-    return mp.cpu_count()
 
 def main():
     # parse arguments
