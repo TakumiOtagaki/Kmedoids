@@ -55,7 +55,7 @@ def better_medoids_initialization(distmat, num_clusters, verbose, random_seed):
     for i in range(num_clusters - 1):
         distmat_sub = distmat[:, medoids]
         distmat_sub = np.min(distmat_sub, axis=1)
-        medoids.append(np.argmax(distmat_sub))
+        medoids = np.append(medoids, np.argmax(distmat_sub))
     return medoids
 
 def medoids_initialization(distmat, num_clusters, verbose, random_seed):
@@ -79,11 +79,13 @@ def kmedoids_iter(distmat, num_clusters, num_thread, verbose, medoids, labels):
 
     # ------------------------------------ update medoids ------------------------------------
     if num_thread == num_clusters:
+        print("num_thread == num_clusters")
         # update medoids
         # use multiprocessing to speed up
         pool = mp.Pool(processes=num_thread)
         results = [pool.apply_async(update_medoids, args=(distmat, labels,  i)) for i in range(num_clusters)]
         medoids = np.array([p.get() for p in results])
+        if verbose: print("\tmedoids = {}".format(medoids))
         pool.close()
         # print("\tmedoids_new calculated")
     
@@ -124,10 +126,20 @@ def kmedoids_iter(distmat, num_clusters, num_thread, verbose, medoids, labels):
         
         # thread distribution: 
             # is proportion to np.where(labels == i)[0].shape[0] (cluster size)
-        thread_distribution = np.array([np.where(labels == i)[0].shape[0] for i in range(num_clusters)])
-        thread_distribution = thread_distribution / np.sum(thread_distribution) * num_thread
-        thread_distribution = np.round(thread_distribution).astype(np.int32)
-        thread_distribution[-1] = num_thread - np.sum(thread_distribution[:-1])
+            # each cluster has at least 1 thread
+
+        thread_distribution = np.zeros(num_clusters, dtype=np.int32)
+
+        # proportion to np.where(labels == i)[0].shape[0] (cluster size)
+        cluster_size = np.array([np.where(labels == i)[0].shape[0] for i in range(num_clusters)])
+        cluster_size = cluster_size / np.sum(cluster_size) # 0 <= cluster_size <= 1
+        thread_distribution = np.ones(num_clusters, dtype=np.int32) + (cluster_size * (num_thread - num_clusters)).astype(np.int32)
+        # add the rest of the threads to the clusters with large size
+        thread_distribution[cluster_ind_sorted[:num_thread - np.sum(thread_distribution)]] += 1
+
+
+        print("thread_distribution = {}".format(thread_distribution))
+        print("np.sum(thread_distribution) = {}".format(np.sum(thread_distribution)))
         # print(thread_distribution)
         pool = mp.Pool(processes=num_thread)
         for k in range(num_clusters):
@@ -156,16 +168,9 @@ def kmedoids_iter(distmat, num_clusters, num_thread, verbose, medoids, labels):
     for i in range(ceil(distmat.shape[0] / num_thread)):
         results = [pool.apply_async(np.argmin, args=(distmat[i * num_thread + j, medoids],)) for j in range(num_thread)]
         labels[i * num_thread : (i + 1) * num_thread] = np.array([p.get() for p in results])
-    results = [pool.apply_async(np.argmin, args=(distmat[i, medoids],)) for i in range(distmat.shape[0] % num_thread)]
 
-
-    
-
-    labels = np.array([p.get() for p in results])
-    pool.close()
     if verbose: print("\tlabel_new calculated")
-    return medoids, labels
-
+    return medoids, labels_old, labels
 
 
 def kmedoids(distmat, num_clusters, num_thread, verbose, max_iter, random_seed):
@@ -176,7 +181,8 @@ def kmedoids(distmat, num_clusters, num_thread, verbose, max_iter, random_seed):
     # return: medoids, labels
 
     # initialize medoids randomly
-    medoids = random.sample(range(distmat.shape[0]), num_clusters)
+    # medoids = random.sample(range(distmat.shape[0]), num_clusters)
+    medoids = better_medoids_initialization(distmat, num_clusters, verbose, random_seed)
     labels = np.zeros(distmat.shape[0], dtype=np.int32)
     for i in range(distmat.shape[0]):
         labels[i] = np.argmin(distmat[i, medoids])
@@ -184,37 +190,16 @@ def kmedoids(distmat, num_clusters, num_thread, verbose, max_iter, random_seed):
     if verbose: print('Initialization done'); iter_span = (max_iter // 5) if max_iter > 5 else 1
 
     # start kmedoids
-    
     for iter in range(max_iter):
         if verbose:
             start = time.time()
             print(f"Iteration {iter}: {iter * 1.0 / max_iter * 100} %")
-        # update medoids
-        # use multiprocessing to speed up
-        # pool = mp.Pool(processes=num_thread)
-        # results = [pool.apply_async(update_medoids, args=(distmat, labels,  i)) for i in range(num_clusters)]
-        # medoids = np.array([p.get() for p in results])
-        # pool.close()
-        # print("\tmedoids_new calculated")
 
-        # labels_old = labels.copy()
-
-        # # update labels
-        # # use multiprocessing to speed up
-        # pool = mp.Pool(processes=num_thread)
-        # results = [pool.apply_async(np.argmin, args=(distmat[i, medoids],)) for i in range(distmat.shape[0])]
-        # labels = np.array([p.get() for p in results])
-        # pool.close()
-        # print("\tlabel_new calculated")
-
-        kmedoids_iter(distmat, num_clusters, num_thread, verbose, medoids, labels)
-
-
-
+        medoids, labels_old, labels = kmedoids_iter(distmat, num_clusters, num_thread, verbose, medoids, labels)
 
         # check convergence
         if np.array_equal(labels, labels_old):
-            if verbose: print('Converged')
+            if verbose: print(f'Converged at {iter}th iteration')
             break
         if verbose: print(f"Time elapsed: {time.time() - start} s for {iter}th iteration")
     if verbose: print('Not converged')
