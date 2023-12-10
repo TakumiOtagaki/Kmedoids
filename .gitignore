@@ -1,3 +1,4 @@
 test_distmat.csv
 make_test_distmat.py
 __pycache__/*
+*.pyc
