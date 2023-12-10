@@ -12,13 +12,14 @@ $ python kmedoids-parallel.py --help
 usage: python kmedoids-parallel.py [-h] [-c] [-p NUM_THREAD] [-s INPUT_SEP] [-I INPUT_DISTMAT] [-T DIST_TYPE]
                             [-M OUTPUT_MEDOIDS] [-L OUTPUT_LABEL] [-k NUM_CLUSTERS] [-v] [-N MAX_ITER]
                             [-r RANDOM_SEED]
-Kmedoids clustering
+Kmedoids clustering with multiprocessing.
 
 options:
   -h, --help            show this help message and exit
-  -c, --av_cpu          Check available CPU. If True, the program will exit after checking available CPU
+  -c, --av_cpu          Checking the available CPU. If True, the program will exit after checking available CPU
   -p NUM_THREAD, --num_thread NUM_THREAD
-                        Number of threads. if num_thread > num_points, set num_thread = num_points for avoiding useless cpu usage
+                        Number of threads. if num_thread > num_points, set num_thread = num_points for avoiding
+                        useless cpu usage
   -s INPUT_SEP, --input_sep INPUT_SEP
                         Input distance matrix separator
   -I INPUT_DISTMAT, --input_distmat INPUT_DISTMAT
@@ -35,7 +36,7 @@ options:
   -N MAX_ITER, --max_iter MAX_ITER
                         Maximum number of iterations
   -r RANDOM_SEED, --random_seed RANDOM_SEED
-                        Random seed.
+                        Random seed: Should be integer
 ```
 
 For example, 
