@@ -193,6 +193,8 @@ def kmedoids(distmat, num_clusters, num_thread, verbose, max_iter, random_seed, 
     for i in range(distmat.shape[0]):
         labels[i] = np.argmin(distmat[i, medoids])
     print('Initialization done.')
+    print("\t medoids = ", medoids)
+    print("\t labels = ", labels)
 
     # start kmedoids
     print("Main loop starts.")
