@@ -95,7 +95,7 @@ def kmedoids_iter(distmat, num_clusters, num_thread, verbose, medoids, labels):
         results = [pool.apply_async(update_medoids, args=(
             distmat, labels,  i)) for i in range(num_clusters)]
         medoids = np.array([p.get() for p in results])
-        print("\tmedoids = {medoids}")
+        print(f"\tmedoids updated: {medoids}")
         pool.close()
         # print("\tmedoids_new calculated")
 
@@ -144,7 +144,7 @@ def kmedoids_iter(distmat, num_clusters, num_thread, verbose, medoids, labels):
             medoids[k] = cluster[np.array(
                 [p.get() for p in results_k]).argmin()]
         pool.close()
-        print("\tmedoids_new calculated")
+        print(f"\tmedoids updated: {medoids}")
 
         # update labels
 
@@ -185,12 +185,10 @@ def kmedoids(distmat, num_clusters, num_thread, verbose, max_iter, random_seed):
     labels = np.zeros(distmat.shape[0], dtype=np.int32)
     for i in range(distmat.shape[0]):
         labels[i] = np.argmin(distmat[i, medoids])
-
-    # if verbose:
-    #     print('Initialization done')
-    print('Initialization done')
+    print('Initialization done.')
 
     # start kmedoids
+    print("Main loop starts.")
     for iter in range(max_iter):
         start = time.time()
         print(f"Iteration {iter}: {iter * 1.0 / max_iter * 100} %")
@@ -237,12 +235,11 @@ def main():
         print("Warning: num_points > num_thread, set num_thread = num_points")
 
     # kmedoids clustering
-    print('Clustering Starts...')
+    print('-------Clustering Starts...-------')
     start = time.time()
     medoids, labels = kmedoids(distmat, args.num_clusters, args.num_thread,
                                args.verbose, args.max_iter, args.random_seed)
-    print('...Clustering Done')
-    print(f"\tTime elapsed: {time.time() - start} s")
+    print(f'...Clustering Done (Time elapsed: {time.time() - start} s)')
 
     # save medoids and labels
     print('--------Saving medoids and labels...-------')
