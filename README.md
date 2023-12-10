@@ -74,3 +74,14 @@ If you want, you can prepend `kmedoids.py` to $PATH.
 python /nfs/data05/otgk/kmedoids-parallel/kmedoids-parallel.py -p 30 -I /nfs/data05/otgk/rDNA/haplotyping/edit_dist_zerofilled.csv \
  -T triu -M /nfs/data05/otgk/rDNA/haplotyping/kmedoids_result/kmedoids.m.csv -L /nfs/data05/otgk/rDNA/haplotyping/kmedoids_result/kmedoids.l.csv -k 30 -N 10 -v
 ```
+
+
+
+# debugging log
+
+```
+python kmedoids-parallel.py -I test/distmat.N100.triu.csv -T sym -M test/N100.sym.medoids.txt -L test/N100.sym.label.txt -v -N 30 -k 11 -p 5 -r 2
+```
+causes `ValueError: attempt to get argmin of an empty sequence`.
+
+
