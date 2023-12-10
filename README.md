@@ -8,16 +8,10 @@ This program can be used when you have distance_matrix (triangle is OK).
 
 # usage
 ```
-python kmedoids-parallel.py --help
-usage: python kmedoids-parallel.py [-h] [--num_thread NUM_THREAD]
-                                   [--input_distmat INPUT_DISTMAT]
-                                   [--dist_type DIST_TYPE]
-                                   [--output_medoids OUTPUT_MEDOIDS]
-                                   [--output_label OUTPUT_LABEL]
-                                   [--num_clusters NUM_CLUSTERS] [--verbose]
-                                   [--max_iter MAX_ITER] [--av_cpu]
-                                   [--random_seed RANDOM_SEED]
-
+$ python kmedoids-parallel.py --help
+usage: python kmedoids-parallel.py [-h] [-c] [-p NUM_THREAD] [-s INPUT_SEP] [-I INPUT_DISTMAT] [-T DIST_TYPE]
+                            [-M OUTPUT_MEDOIDS] [-L OUTPUT_LABEL] [-k NUM_CLUSTERS] [-v] [-N MAX_ITER]
+                            [-r RANDOM_SEED]
 Kmedoids clustering
 
 options:
