@@ -68,6 +68,9 @@ def input_validation(args):
     # input validation
     if args.num_thread <= 0:
         raise ValueError('num_thread must be greater than 0')
+    if args.num_thread > mp.cpu_count():
+        print(
+            "Warning: num_thread > available cpu\n\t Bad things may happen in the future.")
     if args.dist_type not in ['triu', 'tril', 'sym']:
         raise ValueError('dist_type must be triu, tril, or sym')
     if not os.path.exists(args.input_distmat):
@@ -76,8 +79,6 @@ def input_validation(args):
         raise ValueError('num_clusters must be greater than 0')
     if args.max_iter <= 0:
         raise ValueError('max_iter must be greater than 0')
-    if args.num_points <= 0:
-        raise ValueError('num_points must be greater than 0')
     if args.num_points > args.num_thread:
         raise ValueError('num_points must be less than or equal to num_thread')
     if type(args.random_seed) != int:
