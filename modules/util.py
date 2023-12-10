@@ -10,6 +10,13 @@ def available_cpu():
     return mp.cpu_count()
 
 
+def printvb(verbose, text):
+    if verbose:
+        print(text)
+    else:
+        return
+
+
 def parse_args():
     parser = argparse.ArgumentParser(prog='kmedoids-parallel.py',
                                      description='Kmedoids clustering with multiprocessing.')
