@@ -71,6 +71,8 @@ def medoids_initialization(distmat, num_clusters, verbose, random_seed):
     # return: medoids
 
     # initialize medoids randomly
+    if verbose:
+        print("kmedoids normal initialization.")
     random.seed(random_seed)
     medoids = random.sample(range(distmat.shape[0]), num_clusters)
     return medoids
@@ -169,7 +171,7 @@ def kmedoids_iter(distmat, num_clusters, num_thread, verbose, medoids, labels):
     return medoids, labels_old, labels
 
 
-def kmedoids(distmat, num_clusters, num_thread, verbose, max_iter, random_seed):
+def kmedoids(distmat, num_clusters, num_thread, verbose, max_iter, random_seed, better_init):
     # kmedoids clustering
     # distmat: distance matrix (symmetry), ndarray
     # num_clusters: number of clusters
@@ -180,8 +182,13 @@ def kmedoids(distmat, num_clusters, num_thread, verbose, max_iter, random_seed):
     # medoids = random.sample(range(distmat.shape[0]), num_clusters)
     converged = False
     print = partial(printvb, verbose)
-    medoids = better_medoids_initialization(
-        distmat, num_clusters, verbose, random_seed)
+    if better_init:
+        medoids = better_medoids_initialization(
+            distmat, num_clusters, verbose, random_seed)
+    else:
+        medoids = medoids_initialization(
+            distmat, num_clusters, verbose, random_seed)
+
     labels = np.zeros(distmat.shape[0], dtype=np.int32)
     for i in range(distmat.shape[0]):
         labels[i] = np.argmin(distmat[i, medoids])
@@ -219,34 +226,34 @@ def main():
         print(f"Available CPU: {available_cpu()}\nexit.")
         return
 
-    print = partial(printvb, args.verbose)
+    print1 = partial(printvb, args.verbose)
     # read distance matrix
-    print('Reading distance matrix...')
+    print1('Reading distance matrix...')
     start = time.time()
 
     distmat = read_distmat(args.input_distmat, args.dist_type, args.input_sep)
-    print('Reading distmat Done')
-    print(f"\tDistance matrix shape: {distmat.shape}")
-    print(f"\tReading distmat: Time elapsed =  {time.time() - start} s")
+    print1('Reading distmat Done')
+    print1(f"\tDistance matrix shape: {distmat.shape}")
+    print1(f"\tReading distmat: Time elapsed =  {time.time() - start} s")
 
     # if args.num_points > args.num_thread: args.num_thread = args.num_points
     if distmat.shape[0] < args.num_thread:
         args.num_thread = distmat.shape[0]
-        print("Warning: num_points > num_thread, set num_thread = num_points")
+        print1("Warning: num_points > num_thread, set num_thread = num_points")
 
     # kmedoids clustering
-    print('-------Clustering Starts...-------')
+    print1('-------Clustering Starts...-------')
     start = time.time()
     medoids, labels = kmedoids(distmat, args.num_clusters, args.num_thread,
-                               args.verbose, args.max_iter, args.random_seed)
-    print(f'...Clustering Done (Time elapsed: {time.time() - start} s)')
+                               args.verbose, args.max_iter, args.random_seed, args.better_init)
+    print1(f'...Clustering Done (Time elapsed: {time.time() - start} s)')
 
     # save medoids and labels
-    print('--------Saving medoids and labels...-------')
+    print1('--------Saving medoids and labels...-------')
     start = time.time()
     np.savetxt(args.output_medoids, medoids, fmt='%d', delimiter=',')
     np.savetxt(args.output_label, labels, fmt='%d', delimiter=',')
-    print('...Saving Done')
+    print1('...Saving Done')
 
 
 if __name__ == '__main__':

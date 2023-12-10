@@ -43,6 +43,8 @@ def parse_args():
                         help='Maximum number of iterations')
     parser.add_argument('-r', '--random_seed', type=int, default=0,
                         help='Random seed: Should be integer')
+    parser.add_argument('-b', '--better_init', default=True,
+                        help="better initialization. This should be True. (setting the init-medoids each distance is further than randomly selected)")
     return parser.parse_args()
 
 
