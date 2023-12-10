@@ -75,7 +75,7 @@ python /nfs/data05/otgk/kmedoids-parallel/kmedoids-parallel.py -p 30 -I /nfs/dat
 # debugging log
 
 ```
-python kmedoids-parallel.py -I test/distmat.N100.triu.csv -T sym -M test/N100.sym.medoids.txt -L test/N100.sym.label.txt -v -N 30 -k 11 -p 5 -r 2
+python kmedoids-parallel.py -I test/distmat.N100.triu.csv -T triu -M test/N100.sym.medoids.txt -L test/N100.sym.label.txt -v -N 30 -k 11 -p 5 -r 2
 ```
 causes `ValueError: attempt to get argmin of an empty sequence`.
 
