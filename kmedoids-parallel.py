@@ -6,12 +6,10 @@
 #                    --output_medoids medoids.csv --output_label labels.csv --num_clusters 2 --max_iter 1000 \
 #                    --verbose --random_seed 0
 
-import argparse
 import numpy as np
 import random
 import time
 import sys
-import os
 from math import ceil, floor
 import multiprocessing as mp
 from modules.util import parse_args, read_distmat, input_validation, available_cpu, printvb
