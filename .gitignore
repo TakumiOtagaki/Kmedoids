@@ -3,3 +3,5 @@ make_test_distmat.py
 __pycache__/*
 *.pyc
 script.sh
+test/distmat.N10000.sym.csv
+test/distmat.N20000.sym.ik30.csv
