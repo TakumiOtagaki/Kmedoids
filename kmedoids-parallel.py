@@ -55,13 +55,13 @@ def better_medoids_initialization(distmat, num_clusters, verbose, random_seed):
     print("kmedoids++: Better initialization.")
     medoids = np.random.randint(distmat.shape[0], size=1)
     # medoids must be unique.
+    # medoids.append(x), where x is furthest from existing medoids.
     for i in range(num_clusters - 1):
-        distmat_sub = distmat[medoids][:, medoids]
-        print(f"\tdistmat_sub.shape = {distmat_sub.shape}")
-        distmat_sub_sum = np.sum(distmat_sub, axis=1)
-        # medoids[i + 1] = np.random.choice(np.arange(distmat.shape[0]), p=distmat_sub_sum / np.sum(distmat_sub_sum))
-        medoids = np.append(medoids, np.random.choice(
-            np.arange(distmat.shape[0]), p=distmat_sub_sum / np.sum(distmat_sub_sum)))
+        # distmat[medoids]: distance from medoids to all data points
+        # distmat[medoids].min(axis=0): distance from medoids to the closest medoid
+        # distmat[medoids].min(axis=0).argmax(): index of the data point which is furthest from existing medoids
+        medoids = np.append(medoids, distmat[medoids].max(
+            axis=0).argmax())
     return medoids
 
 
@@ -199,9 +199,12 @@ def kmedoids(distmat, num_clusters, num_thread, verbose, max_iter, random_seed, 
         labels[i] = np.argmin(distmat[i, medoids])
     print('Initialization done.')
     print(f"\t medoids = {medoids}")
+    # if medoids are not unique, then exit.
+    if len(set(medoids)) != num_clusters:
+        print("Error: medoids are not unique. Exit.")
+        sys.exit(1)
     print(f"\t labels.freq = {[np.where(labels == i)[0].shape[0] for i in range(num_clusters)]} ")
 
-    sys.exit()
     # start kmedoids
     print("Main loop starts.")
     for iter in range(max_iter):
