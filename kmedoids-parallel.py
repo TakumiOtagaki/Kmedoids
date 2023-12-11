@@ -33,7 +33,6 @@ def update_medoids(distmat, labels,  i):
 
     return cluster[np.argmin(np.sum(distmat_sub, axis=1))]
 
-
 def candidate_medoids_parallel(distmat_sub_split, j):
     # 1 <= thread_id <= num_thread
 
@@ -57,10 +56,14 @@ def better_medoids_initialization(distmat, num_clusters, verbose, random_seed):
     print = partial(printvb, verbose)
     print("kmedoids++: Better initialization.")
     medoids = np.random.randint(distmat.shape[0], size=1)
+    # medoids must be unique.
     for i in range(num_clusters - 1):
-        distmat_sub = distmat[:, medoids]
-        distmat_sub = np.min(distmat_sub, axis=1)
-        medoids = np.append(medoids, np.argmax(distmat_sub))
+        distmat_sub = distmat[medoids][:, medoids]
+        print(f"\tdistmat_sub.shape = {distmat_sub.shape}")
+        distmat_sub_sum = np.sum(distmat_sub, axis=1)
+        # medoids[i + 1] = np.random.choice(np.arange(distmat.shape[0]), p=distmat_sub_sum / np.sum(distmat_sub_sum))
+        medoids = np.append(medoids, np.random.choice(
+            np.arange(distmat.shape[0]), p=distmat_sub_sum / np.sum(distmat_sub_sum)))
     return medoids
 
 
@@ -143,8 +146,12 @@ def kmedoids_iter(distmat, num_clusters, num_thread, verbose, medoids, labels):
             print(f"distmat_sub.shape = {distmat_sub.shape}")
             results_k = [pool.apply_async(candidate_medoids_parallel, args=(
                 distmat_sub_split, j)) for j in range(thread_distribution[k])]
-            medoids[k] = cluster[np.array(
-                [p.get() for p in results_k]).argmin()]
+            # medoids[k] = cluster[np.array(
+            #     [p.get() for p in results_k]).argmin()]
+            # candidate is the index of the data point which has the minimum sum of distance to other data points in the cluster in sub_cluster
+            candidate = cluster[np.array(
+                [p.get() for p in results_k])].argmin()
+                
         pool.close()
         print(f"\tmedoids updated: {medoids}")
 
@@ -193,9 +200,10 @@ def kmedoids(distmat, num_clusters, num_thread, verbose, max_iter, random_seed, 
     for i in range(distmat.shape[0]):
         labels[i] = np.argmin(distmat[i, medoids])
     print('Initialization done.')
-    print("\t medoids = ", medoids)
-    print("\t labels = ", labels)
+    print(f"\t medoids = {medoids}")
+    print(f"\t labels.freq = {[np.where(labels == i)[0].shape[0] for i in range(num_clusters)]} ")
 
+    sys.exit()
     # start kmedoids
     print("Main loop starts.")
     for iter in range(max_iter):
@@ -205,13 +213,16 @@ def kmedoids(distmat, num_clusters, num_thread, verbose, max_iter, random_seed, 
         medoids, labels_old, labels = kmedoids_iter(
             distmat, num_clusters, num_thread, verbose, medoids, labels)
 
+
+        print(f"\t medoids = {medoids}")
+        print(f"\t labels.freq = {[np.where(labels == i)[0].shape[0] for i in range(num_clusters)]} ")
+        print(f"{iter}th iteration: time elapsed = {time.time() - start} s")
         # check convergence
         if np.array_equal(labels, labels_old):
             print(f'---------Converged at {iter}th iteration---------')
             converged = True
             break
 
-        print(f"Time elapsed: {time.time() - start} s for {iter}th iteration")
 
     if converged:
         print('Converged')
