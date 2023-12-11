@@ -45,7 +45,13 @@ python kmedoids.py --num_core 4 --input_distmat dist.csv --dist_type (triu|tril|
                     --output_medoids medoids.csv --output_label labels.csv --num_clusters 2 --max_iter 1000 \
                     --verbose --random_seed 0
 
-python ../../kmedoids-parallel/kmedoids-parallel.py --num_thread 30 --input_distmat edit_dist_zerofilled.csv --dist_type triu --output_medoids kmedoids_result/medois.csv --output_label kmedoids_result/labels.csv --num_clusters 30 --max_iter 1000 --verbose
+python kmedoids-parallel.py \
+ -I test/distmat.N100.sym.csv \
+ -M test/medoids.N100.sym.csv \
+ -L test/labels.N100.sym.csv \
+ -N 100 \
+ -k 5 \
+ -p 10
 ```
 
 
