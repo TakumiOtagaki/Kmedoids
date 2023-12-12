@@ -26,20 +26,8 @@ def update_medoids(distmat, labels,  i):
 
     cluster = np.where(labels == i)[0]
     distmat_sub = distmat[cluster][:, cluster]
-    # medoids[i] = cluster[np.argmin(np.sum(distmat_sub, axis=1))]
-    # return medoids[i]
-
+    # return medoids[i] = cluster[np.argmin(np.sum(distmat_sub, axis=1))]
     return cluster[np.argmin(np.sum(distmat_sub, axis=1))]
-
-def candidate_medoids_parallel(distmat_sub_split, j):
-    # 1 <= thread_id <= num_thread
-
-    # return the index of the data point which has the minimum sum of distance to other data points in the cluster in each thread
-    # return integer
-
-    # return cluster[np.argmin(distmat_sub_sum)]
-
-    return np.argmin(np.sum(distmat_sub_split[j], axis=1))
 
 
 def better_medoids_initialization(distmat, num_clusters, verbose, random_seed):
@@ -60,7 +48,7 @@ def better_medoids_initialization(distmat, num_clusters, verbose, random_seed):
         # distmat[medoids]: distance from medoids to all data points
         # distmat[medoids].min(axis=0): distance from medoids to the closest medoid
         # distmat[medoids].min(axis=0).argmax(): index of the data point which is furthest from existing medoids
-        medoids = np.append(medoids, distmat[medoids].max(
+        medoids = np.append(medoids, distmat[medoids].min(
             axis=0).argmax())
     return medoids
 
@@ -80,80 +68,19 @@ def medoids_initialization(distmat, num_clusters, verbose, random_seed):
 
 
 def kmedoids_iter(distmat, num_clusters, num_thread, verbose, medoids, labels):
-    # 3 cases:
-    # num_thread = num_clusters
-    # num_thread < num_clusters
-    # num_thread > num_clusters
     # return: medoids, labels
 
     labels_old = labels.copy()
     print = partial(printvb, verbose)
 
     # ------------------------------------ update medoids ------------------------------------
-    if num_thread <= num_clusters:
-        print("num_thread <= num_clusters")
-        # update medoids
-        # use multiprocessing to speed up
-        pool = mp.Pool(processes=num_thread)
-        results = [pool.apply_async(update_medoids, args=(
-            distmat, labels,  i)) for i in range(num_clusters)]
-        medoids = np.array([p.get() for p in results])
-        print(f"\tmedoids updated: {medoids}")
-        pool.close()
-        # print("\tmedoids_new calculated")
 
-    elif num_thread > num_clusters:
-        # for each cluster i, sort the cluster by np.where(labels == i)[0].shape[0],
-        # then, distribute the threads (num_thread) to the clusters in nice way.
-        # e.g. num_thread = 8, num_clusters = 5, then 3 threads are distributed to the clusters with large size.
-        # cluster 0: 3 threads
-        # cluster 1: 2 threads
-        # cluster 2: 1 thread
-        # cluster 3: 1 thread
-        # cluster 4: 1 thread
-
-        # sort the cluster index by np.where(labels == i)[0].shape[0]: large -> small
-        cluster_ind_sorted = np.argsort(
-            [np.where(labels == i)[0].shape[0] for i in range(num_clusters)])[::-1]
-
-        # thread distribution:
-        # is proportion to np.where(labels == i)[0].shape[0] (cluster size)
-        # each cluster has at least 1 thread
-
-        # proportion to np.where(labels == i)[0].shape[0] (cluster size)
-        cluster_size = np.array([np.where(labels == i)[0].shape[0]
-                                for i in range(num_clusters)])  # 0 <= cluster_size <= 1
-        cluster_size = cluster_size / np.sum(cluster_size)
-        thread_distribution = np.ones(num_clusters, dtype=np.int32) + (
-            cluster_size * (num_thread - num_clusters)).astype(np.int32)
-        # add the rest of the threads to the clusters with large size
-        thread_distribution[cluster_ind_sorted[:num_thread -
-                                               np.sum(thread_distribution)]] += 1
-
-        print(f"thread_distribution = {thread_distribution} \n\
-                   np.sum(thread_distribution) = {np.sum(thread_distribution)}")
-
-        pool = mp.Pool(processes=num_thread)
-        for k in range(num_clusters):
-            # get the argmin candidate.
-            # use multiprocessing to speed up
-            cluster = np.where(labels == k)[0]
-            distmat_sub = distmat[cluster][:, cluster]
-            distmat_sub_split = np.array_split(
-                distmat_sub, thread_distribution[k])
-            print(f"distmat_sub.shape = {distmat_sub.shape}")
-            results_k = [pool.apply_async(candidate_medoids_parallel, args=(
-                distmat_sub_split, j)) for j in range(thread_distribution[k])]
-            # medoids[k] = cluster[np.array(
-            #     [p.get() for p in results_k]).argmin()]
-            # candidate is the index of the data point which has the minimum sum of distance to other data points in the cluster in sub_cluster
-            candidate = cluster[np.array(
-                [p.get() for p in results_k])].argmin()
-                
-        pool.close()
-        print(f"\tmedoids updated: {medoids}")
-
-        # update labels
+    # update medoids
+    pool = mp.Pool(processes=min(num_thread, num_clusters))
+    results = [pool.apply_async(update_medoids, args=(
+        distmat, labels,  i)) for i in range(num_clusters)]
+    medoids = np.array([p.get() for p in results])
+    pool.close()
 
     # ------------------------------------ update labels ------------------------------------
     # use multiprocessing to speed up
@@ -161,18 +88,11 @@ def kmedoids_iter(distmat, num_clusters, num_thread, verbose, medoids, labels):
     # distribute the threads to distmat.shape[0].
     # distmat.shape[0] is larger than num_thread, so we need to split distmat.shape[0] into num_thread.
     # calc np.argmin, args=(distmat[i, medoids] for i in range(distmat.shape[0])).
-    # for i in range(distmat.shape[0]), we need to calc np.argmin, args=(distmat[i, medoids]). split this into num_thread.
 
-    # print(
-    #     f"ceil(distmat.shape[0] / num_thread) = {ceil(distmat.shape[0] / num_thread)}")
-    for i in range(floor(distmat.shape[0] / num_thread)):
-        # print(f"i = {i}, i * num_thread + j = {i * num_thread} + j")
-        results = [pool.apply_async(np.argmin, args=(
-            distmat[i * num_thread + j, medoids],)) for j in range(num_thread)]
-        labels[i * num_thread: (i + 1) *
-               num_thread] = np.array([p.get() for p in results])
+    results = [pool.apply_async(np.argmin, args=(
+        distmat[i, medoids],)) for i in range(distmat.shape[0])]
+    labels = np.array([p.get() for p in results])
 
-    print("\tlabel_new calculated")
     return medoids, labels_old, labels
 
 
@@ -184,9 +104,9 @@ def kmedoids(distmat, num_clusters, num_thread, verbose, max_iter, random_seed, 
     # return: medoids, labels
 
     # initialize medoids randomly
-    # medoids = random.sample(range(distmat.shape[0]), num_clusters)
     converged = False
     print = partial(printvb, verbose)
+
     if better_init:
         medoids = better_medoids_initialization(
             distmat, num_clusters, verbose, random_seed)
@@ -197,16 +117,12 @@ def kmedoids(distmat, num_clusters, num_thread, verbose, max_iter, random_seed, 
     labels = np.zeros(distmat.shape[0], dtype=np.int32)
     for i in range(distmat.shape[0]):
         labels[i] = np.argmin(distmat[i, medoids])
-    print('Initialization done.')
+    print('...Initialization done.')
     print(f"\t medoids = {medoids}")
-    # if medoids are not unique, then exit.
-    if len(set(medoids)) != num_clusters:
-        print("Error: medoids are not unique. Exit.")
-        sys.exit(1)
     print(f"\t labels.freq = {[np.where(labels == i)[0].shape[0] for i in range(num_clusters)]} ")
 
     # start kmedoids
-    print("Main loop starts.")
+    print("Main loop starts....")
     for iter in range(max_iter):
         start = time.time()
         print(f"Iteration {iter}: {iter * 1.0 / max_iter * 100} %")
@@ -217,18 +133,18 @@ def kmedoids(distmat, num_clusters, num_thread, verbose, max_iter, random_seed, 
 
         print(f"\t medoids = {medoids}")
         print(f"\t labels.freq = {[np.where(labels == i)[0].shape[0] for i in range(num_clusters)]} ")
-        print(f"{iter}th iteration: time elapsed = {time.time() - start} s")
+        print(f"\t{iter}th iteration: time elapsed = {time.time() - start} s")
         # check convergence
         if np.array_equal(labels, labels_old):
-            print(f'---------Converged at {iter}th iteration---------')
+            print(f'# Converged at {iter}th iteration')
             converged = True
             break
 
 
     if converged:
-        print('Converged')
+        print('...Converged')
     else:
-        print("Iteration done. (Not converged)")
+        print("...Iteration done. (Not converged)")
     return medoids, labels
 
 
