@@ -75,12 +75,39 @@ export PATH="path/to/kmedoids-parallel.py:${PATH}"
 
 ```
 
-
-
-# debugging log
-
+# example
 ```
-python kmedoids-parallel.py -I test/distmat.N100.triu.csv -T triu -M test/N100.sym.medoids.txt -L test/N100.sym.label.txt -v -N 30 -k 11 -p 5 -r 2
+$ cd Kmedoids-parallel/test
+$ python kmedoids-parallel.py -I 'test/test_distmat_n300.csv' -s , -T sym -M test/test300.medoid.csv -L test/test300.label.csv -k 4 -v -N 10 -r 0 -p 2
+Reading distance matrix...
+Reading distmat Done
+        Distance matrix shape: (300, 300)
+        Reading distmat: Time elapsed =  0.01831841468811035 s
+--------Input confirmation--------
+k=4, num_thread=1, max_iter=10, random_seed=0
+-------Clustering Starts...-------
+kmedoids normal initialization.
+...Initialization done.
+         medoids = [197, 215, 20, 132]
+         labels.freq = [50, 56, 121, 73] 
+Main loop starts....
+Iteration 0: 0.0 %
+         medoids = [250 254  25 163]
+         labels.freq = [59, 47, 121, 73] 
+        0th iteration: time elapsed = 0.13573622703552246 s
+Iteration 1: 10.0 %
+         medoids = [221 256  25 163]
+         labels.freq = [59, 47, 121, 73] 
+        1th iteration: time elapsed = 0.08876228332519531 s
+# Converged at 1th iteration
+...Converged
+...Clustering Done (Time elapsed: 0.227003812789917 s)
+--------Saving medoids and labels...-------
+...Saving Done
 ```
-causes `ValueError: attempt to get argmin of an empty sequence`.
+
+The input points are distributed like:
+
+
+
 
