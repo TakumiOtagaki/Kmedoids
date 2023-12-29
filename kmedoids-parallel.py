@@ -170,6 +170,11 @@ def main():
     if distmat.shape[0] < args.num_thread:
         args.num_thread = distmat.shape[0]
         print1("Warning: num_points > num_thread, set num_thread = num_points")
+    
+    # input confirmation
+    print1('--------Input confirmation--------')
+    print(f"k={args.num_clusters}, num_thread={args.num_thread}, max_iter={args.max_iter}, random_seed={args.random_seed}")
+
 
     # kmedoids clustering
     print1('-------Clustering Starts...-------')
