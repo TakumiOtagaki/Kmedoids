@@ -108,6 +108,11 @@ Iteration 1: 10.0 %
 
 The input points are distributed like:
 
+![points](https://github.com/TakumiOtagaki/Kmedoids-parallel/blob/main/test/test_points_n300r0.png)
+
+Kmedoids-parallel result is:
+
+![result](https://github.com/TakumiOtagaki/Kmedoids-parallel/blob/main/test/test300_kmresult.png)
 
 
 
